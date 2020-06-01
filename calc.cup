@@ -1,0 +1,273 @@
+import java_cup.runtime.*;
+import java.io.*;
+import java.util.List;
+import java.util.LinkedList;
+
+parser code {:
+
+Simbolo simb;
+TablasSimbolos ts;
+PilaTablasSimbolos pila;
+
+public static void main(String[] argv){
+	if (argv.length == 0) {
+		      System.out.println("Uso : java Parser  <inputfile)>");
+		    }
+	else{
+	try {
+		java.io.FileInputStream stream = new java.io.FileInputStream(argv[0]);
+	    java.io.Reader reader = new java.io.InputStreamReader(stream);
+		Scanner analizadorLexico= new Yylex(reader);
+		Parser parserObj = new Parser();
+		parserObj.setScanner(analizadorLexico);
+		parserObj.parse();
+		}
+		catch(Exception x) {
+		System.out.println("Error fatal.");
+		}
+	}
+}
+
+public void syntax_error(Symbol cur_token){
+	String msg = "[Parser] Error de Sintaxis: "+symbl_name_from_id(cur_token.sym)+"en linea "+cur_token.left+", columna "+cur_token.right+"\n";
+	
+	List<Integer> list_of_ids = expected_token_ids();
+	LinkedList<String> list = new LinkedList<String>();
+	for(Integer token_id : list_of_ids){
+		list.add(symbl_name_from_id(token_id));
+	}
+	
+	msg += "\tTipos de tokens esperados: " + list +"\n";
+	System.out.println(msg);
+}
+
+:};
+
+/*Terminales tokens que puede devolver el lexico*/
+terminal PTOYCOMA, ABRE_PARENTESIS, CIERRA_PARENTESIS, ABRE_CORCHETE, CIERRA_CORCHETE, ABRE_LLAVE, CIERRA_LLAVE; /*Delimitadores*/
+terminal MAS,MENOS,POR,ENTRE, POW, SQRT, UMENOS, UMAS, ASSIGN, PRINT; /*Operaciones*/
+terminal TIPO_FLOAT, TIPO_INT;
+terminal Float FLOAT;
+terminal Integer INTEGER;
+terminal String ID;
+
+non terminal programa, bloque, decls, instrs, instr, decl, tipo;
+non terminal t_basico, t_componente, factor;
+non terminal Float expr;
+
+/*Precedencias*/
+precedence left MAS,MENOS;
+precedence left POR,ENTRE;
+precedence left SQRT,POW;
+precedence left UMENOS, UMAS;
+precedence left ABRE_PARENTESIS;
+
+/*Gramatica*/
+
+programa ::= bloque {: pila = new PilaTablasSimbolos(); :} ;
+
+bloque ::= ABRE_LLAVE 
+{: if(ts!=null){
+	pila.push(ts);}
+	ts=new TablaSimbolos(pila); :}
+	
+decls instrs CIERRA_LLAVE 
+{: if (pila.size()>0){
+		ts=pila.pop();}
+	 else{
+	 	ts=null;} :} ;
+
+decls ::= decls decl;
+
+decl ::= tipo ID:id0 
+	{: simb = new Simbolo (id0, t1, 0);
+		ts.put(simb.nombre, simb); :} ;
+
+tipo ::= t_basico:tb t_componente:tc
+		{: if (tc==null){
+			RESULT=tb;}
+			else{
+			RESULT = "Array de (" +tipo_componente.valor+ ", "+tipo_basico.valor+")");} :} ;
+			
+t_basico ::= TIPO_INT {: RESULT= "TIPO_INT"; :}
+			| TIPO_FLOAT {: RESULT = "TIPO_FLOAT" :} ;
+
+t_componente ::= ABRE_CORCHETE INTEGER CIERRA_CORCHETE t_componente:tc
+	{: if(tc!=null){
+		RESULT= ""+num_int.valor+ "x" + tc;}
+		else{
+			RESULT = "" +num_int.valor;}; :} ;
+
+instrs ::= instrs instr ;
+
+instr ::= bloque | factor:f1 ASSIGN expr:e PTOYCOMA
+	{:
+		try{
+			simb.ts.get(f1.nombre);
+			if(simb!=null){
+				if(f1.tipo.equals(e.tipo)){
+					Number nuevo_valor = e.valor;
+					Simbolo simb_aux = new Simbolo (f1.nombre, f1.tipo, nuevo_valor);
+					ts.put(f1.nombre, simb.aux);
+				}
+				else if(f1.tipo.equals("TIPO_FLOAT") && e.tipo.equals("TIPO_INT")){
+					Number nuevo_valor = e.valor.floatValue();
+					Simbolo simb_aux = new Simbolo (f1.nombre, f1.tipo, nuevo_valor);
+					ts.put(f1.nombre, simb.aux);
+				}
+				else{
+					System.out.println("Incompatibilidad de tipos: variable "+f1.nombre+" no es de tipo "+e.tipo+" [linea: " +f1left+ ", col: " +f1right+ "] \n");
+				}
+			}
+			else{
+				System.out.println("Variable no declarada: "+f1.nombre+" [linea: " +f1left+ ", col: " +f1right+ "] \n");
+			}
+		}catch(Exception exc){}
+	:} 
+| 
+	PRINT ABRE_PARENTESIS factor:f1 CIERRA_PARENTESIS PTOYCOMA
+	{: try{
+		simb=ts.get(f1.nombre);
+		if(simb!=null){
+			System.out.println("Simbolo: "+simb);
+			}
+		else{
+			System.out.println("Variable no declarada: "+f1.nombre+" [linea: +f1left+ ", col: " +f1right+ "] \n");
+		}
+	}catch(Exception exc){} 
+	:} ;
+
+factor::= ID:id1
+	{: 
+		simb=ts.get(id1);
+		if(simb!=null){
+			RESULT=simb;
+		}else{
+			System.out.println("Variable no declarada"+id1+" [linea: +id1left+ ", col: " +id1right+ "] \n");
+			RESULT = null;
+		}
+	:} ;
+
+expr::= INTEGER | factor:f1
+{:
+	try{
+		simb=ts.get(f1.nombre);
+		if(simb!=null){
+			RESULT=simb;
+			}
+		else{
+			System.out.println("Variable no declarada: "+f1+" [linea: +f1left+ ", col: " +f1right+ "] \n");
+		}
+	}catch(Exception exc){RESULT=null;} 
+:}
+|
+FLOAT:n1
+
+{: RESULT = new Simbolo("", "TIPO_FLOAT" , n1.floatValue()); :}
+
+| 
+MENOS expr:e1 
+	{:
+		try{
+			if(e1.tipo.equals("TIPO_FLOAT")){
+				float valor = -e1.valor.floatValue();
+				RESULT = new Simbolo("", "TIPO_FLOAT", valor);
+			}
+			else{
+				int valor= -e1.valor.intValue();
+				RESULT = new Simbolo("", "TIPO_INT", valor);
+			}
+		}catch (Exception exc){RESULT=null;}
+	:} %prec UMENOS
+|
+MAS expr:e1 
+	{:
+		try{
+			if(e1.tipo.equals("TIPO_FLOAT")){
+				float valor = +e1.valor.floatValue();
+				RESULT = new Simbolo("", "TIPO_FLOAT", valor);
+			}
+			else{
+				int valor= +e1.valor.intValue();
+				RESULT = new Simbolo("", "TIPO_INT", valor);
+			}
+		}catch (Exception exc){RESULT=null;}
+	:} %prec UMAS
+|
+expr:e1 MAS expr:e2 
+	{:
+		try{
+			if((e1.tipo.equals("TIPO_FLOAT")) || (e2.tipo.equals("TIPO_FLOAT")){
+				float res = e1.valor.floatValue() + e2.valor.floatValue();
+				RESULT = new Simbolo("", "TIPO_FLOAT", res);
+			}
+			else{
+				int res= e1.valor.intValue() + e2.valor.intValue();
+				RESULT = new Simbolo("", "TIPO_INT", res);
+			}
+		}catch (Exception exc){RESULT=null;}
+	:}
+|
+expr:e1 MENOS expr:e2 
+	{:
+		try{
+			if((e1.tipo.equals("TIPO_FLOAT")) || (e2.tipo.equals("TIPO_FLOAT")){
+				float res = e1.valor.floatValue() - e2.valor.floatValue();
+				RESULT = new Simbolo("", "TIPO_FLOAT", res);
+			}
+			else{
+				int res= e1.valor.intValue() - e2.valor.intValue();
+				RESULT = new Simbolo("", "TIPO_INT", res);
+			}
+		}catch (Exception exc){RESULT=null;}
+	:}
+|
+expr:e1 POR expr:e2 
+	{:
+		try{
+			if((e1.tipo.equals("TIPO_FLOAT")) || (e2.tipo.equals("TIPO_FLOAT")){
+				float res = e1.valor.floatValue() * e2.valor.floatValue();
+				RESULT = new Simbolo("", "TIPO_FLOAT", res);
+			}
+			else{
+				int res= e1.valor.intValue() * e2.valor.intValue();
+				RESULT = new Simbolo("", "TIPO_INT", res);
+			}
+		}catch (Exception exc){RESULT=null;}
+	:}
+|
+expr:e1 ENTRE expr:e2 
+	{:
+		try{
+			if((e1.tipo.equals("TIPO_FLOAT")) || (e2.tipo.equals("TIPO_FLOAT")){
+				float res = e1.valor.floatValue() / e2.valor.floatValue();
+				RESULT = new Simbolo("", "TIPO_FLOAT", res);
+			}
+			else{
+				int res= e1.valor.intValue() / e2.valor.intValue();
+				RESULT = new Simbolo("", "TIPO_INT", res);
+			}
+		}catch (Exception exc){RESULT=null;}
+	:}
+|
+SQRT ABRE_PARENTESIS expr:e1 CIERRA_PARENTESIS
+
+	{:
+		try{
+			float valor = Float.valueOf((float)Math.sqrt(e1.valor.floatValue()));
+			RESULT = new Simbolo ("", "TIPO_FLOAT", valor);
+		}catch(Exception exc){RESULT=null;}
+	:}
+|
+expr:e1 POW expr:e2
+
+	{:
+		try{
+			float valor = Float.valueOf((float)Math.pow(e1.valor.floatValue()));
+			RESULT = new Simbolo ("", "TIPO_FLOAT", valor);
+		}catch(Exception exc){RESULT=null;}
+	:}
+|
+ABRE_PARENTESIS expr:e CIERRA_PARENTESIS 
+{: RESULT=e; :} 
+;
