@@ -18,7 +18,6 @@ Identificador = [a-zA-Z_][a-zA-Z_0-9]*
 "-" { return new Symbol(sym.MENOS); }
 "*" { return new Symbol(sym.POR); }
 "/" { return new Symbol(sym.ENTRE); }
-"%" { return new Symbol(sym.MODULO); }
 ";" { return new Symbol(sym.PTOYCOMA); }
 "(" { return new Symbol(sym.ABRE_PARENTESIS); }
 ")" { return new Symbol(sym.CIERRA_PARENTESIS); }

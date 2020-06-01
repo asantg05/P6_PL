@@ -6,7 +6,7 @@ import java.util.LinkedList;
 parser code {:
 
 Simbolo simb;
-TablasSimbolos ts;
+TablaSimbolos ts;
 PilaTablasSimbolos pila;
 
 public static void main(String[] argv){
@@ -51,9 +51,9 @@ terminal Float FLOAT;
 terminal Integer INTEGER;
 terminal String ID;
 
-non terminal programa, bloque, decls, instrs, instr, decl, tipo;
-non terminal t_basico, t_componente, factor;
-non terminal Float expr;
+non terminal programa, bloque, decls, instrs, instr, decl;
+non terminal Simbolo factor, expr;
+non terminal String tipo, t_componente, t_basico;
 
 /*Precedencias*/
 precedence left MAS,MENOS;
@@ -79,48 +79,53 @@ decls instrs CIERRA_LLAVE
 
 decls ::= decls decl;
 
-decl ::= tipo ID:id0 
+decl ::= tipo:t1 ID:id0 
 	{: simb = new Simbolo (id0, t1, 0);
 		ts.put(simb.nombre, simb); :} ;
 
 tipo ::= t_basico:tb t_componente:tc
 		{: if (tc==null){
-			RESULT=tb;}
+			RESULT=tb;
+			}
 			else{
-			RESULT = "Array de (" +tipo_componente.valor+ ", "+tipo_basico.valor+")");} :} ;
+			RESULT = "Array de ("+tb+", "+tc+")";
+			} 
+		:} 
+;
 			
 t_basico ::= TIPO_INT {: RESULT= "TIPO_INT"; :}
-			| TIPO_FLOAT {: RESULT = "TIPO_FLOAT" :} ;
+			| TIPO_FLOAT {: RESULT = "TIPO_FLOAT"; :} ;
 
-t_componente ::= ABRE_CORCHETE INTEGER CIERRA_CORCHETE t_componente:tc
+t_componente ::= ABRE_CORCHETE INTEGER:num_int CIERRA_CORCHETE t_componente:tc
 	{: if(tc!=null){
-		RESULT= ""+num_int.valor+ "x" + tc;}
+		RESULT= ""+num_int+ "x" + tc;}
 		else{
-			RESULT = "" +num_int.valor;}; :} ;
+			RESULT = "" +num_int;}; :} ;
 
 instrs ::= instrs instr ;
 
 instr ::= bloque | factor:f1 ASSIGN expr:e PTOYCOMA
 	{:
 		try{
-			simb.ts.get(f1.nombre);
+			simb=ts.get(f1.nombre);
 			if(simb!=null){
 				if(f1.tipo.equals(e.tipo)){
 					Number nuevo_valor = e.valor;
 					Simbolo simb_aux = new Simbolo (f1.nombre, f1.tipo, nuevo_valor);
-					ts.put(f1.nombre, simb.aux);
+					ts.put(f1.nombre, simb_aux);
 				}
 				else if(f1.tipo.equals("TIPO_FLOAT") && e.tipo.equals("TIPO_INT")){
 					Number nuevo_valor = e.valor.floatValue();
 					Simbolo simb_aux = new Simbolo (f1.nombre, f1.tipo, nuevo_valor);
-					ts.put(f1.nombre, simb.aux);
+					ts.put(f1.nombre, simb_aux);
 				}
 				else{
 					System.out.println("Incompatibilidad de tipos: variable "+f1.nombre+" no es de tipo "+e.tipo+" [linea: " +f1left+ ", col: " +f1right+ "] \n");
 				}
 			}
 			else{
-				System.out.println("Variable no declarada: "+f1.nombre+" [linea: " +f1left+ ", col: " +f1right+ "] \n");
+				System.out.println("Variable no declarada: "+f1.nombre +  
+				" [linea: " +f1left+ ", col: " +f1right+ "] \n");
 			}
 		}catch(Exception exc){}
 	:} 
@@ -132,7 +137,7 @@ instr ::= bloque | factor:f1 ASSIGN expr:e PTOYCOMA
 			System.out.println("Simbolo: "+simb);
 			}
 		else{
-			System.out.println("Variable no declarada: "+f1.nombre+" [linea: +f1left+ ", col: " +f1right+ "] \n");
+			System.out.println("Variable no declarada: "+f1.nombre+" [linea:" +f1left+ ", col: " +f1right+ "] \n");
 		}
 	}catch(Exception exc){} 
 	:} ;
@@ -143,7 +148,7 @@ factor::= ID:id1
 		if(simb!=null){
 			RESULT=simb;
 		}else{
-			System.out.println("Variable no declarada"+id1+" [linea: +id1left+ ", col: " +id1right+ "] \n");
+			System.out.println("Variable no declarada"+id1+" [linea:" +id1left+ ", col: " +id1right+ "] \n");
 			RESULT = null;
 		}
 	:} ;
@@ -156,7 +161,7 @@ expr::= INTEGER | factor:f1
 			RESULT=simb;
 			}
 		else{
-			System.out.println("Variable no declarada: "+f1+" [linea: +f1left+ ", col: " +f1right+ "] \n");
+			System.out.println("Variable no declarada: "+f1+" [linea:" +f1left+ ", col: " +f1right+ "] \n");
 		}
 	}catch(Exception exc){RESULT=null;} 
 :}
@@ -197,7 +202,7 @@ MAS expr:e1
 expr:e1 MAS expr:e2 
 	{:
 		try{
-			if((e1.tipo.equals("TIPO_FLOAT")) || (e2.tipo.equals("TIPO_FLOAT")){
+			if((e1.tipo.equals("TIPO_FLOAT")) || (e2.tipo.equals("TIPO_FLOAT"))){
 				float res = e1.valor.floatValue() + e2.valor.floatValue();
 				RESULT = new Simbolo("", "TIPO_FLOAT", res);
 			}
@@ -211,7 +216,7 @@ expr:e1 MAS expr:e2
 expr:e1 MENOS expr:e2 
 	{:
 		try{
-			if((e1.tipo.equals("TIPO_FLOAT")) || (e2.tipo.equals("TIPO_FLOAT")){
+			if((e1.tipo.equals("TIPO_FLOAT")) || (e2.tipo.equals("TIPO_FLOAT"))){
 				float res = e1.valor.floatValue() - e2.valor.floatValue();
 				RESULT = new Simbolo("", "TIPO_FLOAT", res);
 			}
@@ -225,7 +230,7 @@ expr:e1 MENOS expr:e2
 expr:e1 POR expr:e2 
 	{:
 		try{
-			if((e1.tipo.equals("TIPO_FLOAT")) || (e2.tipo.equals("TIPO_FLOAT")){
+			if((e1.tipo.equals("TIPO_FLOAT")) || (e2.tipo.equals("TIPO_FLOAT"))){
 				float res = e1.valor.floatValue() * e2.valor.floatValue();
 				RESULT = new Simbolo("", "TIPO_FLOAT", res);
 			}
@@ -239,7 +244,7 @@ expr:e1 POR expr:e2
 expr:e1 ENTRE expr:e2 
 	{:
 		try{
-			if((e1.tipo.equals("TIPO_FLOAT")) || (e2.tipo.equals("TIPO_FLOAT")){
+			if((e1.tipo.equals("TIPO_FLOAT")) || (e2.tipo.equals("TIPO_FLOAT"))){
 				float res = e1.valor.floatValue() / e2.valor.floatValue();
 				RESULT = new Simbolo("", "TIPO_FLOAT", res);
 			}
@@ -263,7 +268,7 @@ expr:e1 POW expr:e2
 
 	{:
 		try{
-			float valor = Float.valueOf((float)Math.pow(e1.valor.floatValue()));
+			float valor = Float.valueOf((float)Math.pow(e1.valor.floatValue(), e2.valor.floatValue()));
 			RESULT = new Simbolo ("", "TIPO_FLOAT", valor);
 		}catch(Exception exc){RESULT=null;}
 	:}
