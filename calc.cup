@@ -61,10 +61,12 @@ precedence left POR,ENTRE;
 precedence left SQRT,POW;
 precedence left UMENOS, UMAS;
 precedence left ABRE_PARENTESIS;
+precedence left ABRE_LLAVE, CIERRA_LLAVE;
 
 /*Gramatica*/
 
-programa ::= bloque {: pila = new PilaTablasSimbolos(); :} ;
+programa ::= bloque {: pila = new PilaTablasSimbolos(); :} 
+;
 
 bloque ::= ABRE_LLAVE 
 {: if(ts!=null){
@@ -75,11 +77,13 @@ decls instrs CIERRA_LLAVE
 {: if (pila.size()>0){
 		ts=pila.pop();}
 	 else{
-	 	ts=null;} :} ;
+	 	ts=null;} :} 
+;
 
-decls ::= decls decl;
+decls ::= decls decl
+;
 
-decl ::= tipo:t1 ID:id0 
+decl ::= tipo:t1 ID:id0 PTOYCOMA
 	{: simb = new Simbolo (id0, t1, 0);
 		ts.put(simb.nombre, simb); :} ;
 
@@ -94,15 +98,18 @@ tipo ::= t_basico:tb t_componente:tc
 ;
 			
 t_basico ::= TIPO_INT {: RESULT= "TIPO_INT"; :}
-			| TIPO_FLOAT {: RESULT = "TIPO_FLOAT"; :} ;
+			| TIPO_FLOAT {: RESULT = "TIPO_FLOAT"; :}
+;
 
 t_componente ::= ABRE_CORCHETE INTEGER:num_int CIERRA_CORCHETE t_componente:tc
 	{: if(tc!=null){
 		RESULT= ""+num_int+ "x" + tc;}
 		else{
-			RESULT = "" +num_int;}; :} ;
+			RESULT = "" +num_int;}; :}
+;
 
-instrs ::= instrs instr ;
+instrs ::= instrs instr 
+;
 
 instr ::= bloque | factor:f1 ASSIGN expr:e PTOYCOMA
 	{:
@@ -140,7 +147,8 @@ instr ::= bloque | factor:f1 ASSIGN expr:e PTOYCOMA
 			System.out.println("Variable no declarada: "+f1.nombre+" [linea:" +f1left+ ", col: " +f1right+ "] \n");
 		}
 	}catch(Exception exc){} 
-	:} ;
+	:} 
+;
 
 factor::= ID:id1
 	{: 
