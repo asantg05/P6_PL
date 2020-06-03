@@ -12,7 +12,7 @@ public Number valor;
 	}
 	
 	public String toString() {
-		return ("Nombre: " +this.nombre+ ", Tipo de Dato: " +this.tipo+ ", Valor= " +this.valor);
+		return ("["+this.nombre+ ";" +this.tipo+ ";" +this.valor+"]");
 	}
 	
 }

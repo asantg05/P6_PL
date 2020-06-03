@@ -29,7 +29,7 @@ public static void main(String[] argv){
 }
 
 public void syntax_error(Symbol cur_token){
-	String msg = "[Parser] Error de Sintaxis: "+symbl_name_from_id(cur_token.sym)+"en linea "+cur_token.left+", columna "+cur_token.right+"\n";
+	String msg = "[Parser] Error de Sintaxis: "+symbl_name_from_id(cur_token.sym)+" en linea "+cur_token.left+", columna "+cur_token.right+"\n";
 	
 	List<Integer> list_of_ids = expected_token_ids();
 	LinkedList<String> list = new LinkedList<String>();
@@ -43,6 +43,11 @@ public void syntax_error(Symbol cur_token){
 
 :};
 
+/*Inicializacion del analizador lexico si procede*/
+//init with {: s.init(); :};
+/*Siguiente token al lexico*/
+//scan with {: return this.getScanner().next_token(); :};
+
 /*Terminales tokens que puede devolver el lexico*/
 terminal PTOYCOMA, ABRE_PARENTESIS, CIERRA_PARENTESIS, ABRE_CORCHETE, CIERRA_CORCHETE, ABRE_LLAVE, CIERRA_LLAVE; /*Delimitadores*/
 terminal MAS,MENOS,POR,ENTRE, POW, SQRT, UMENOS, UMAS, ASSIGN, PRINT; /*Operaciones*/
@@ -51,7 +56,10 @@ terminal Float FLOAT;
 terminal Integer INTEGER;
 terminal String ID;
 
+/* No terminales sin atributo*/
 non terminal programa, bloque, decls, instrs, instr, decl;
+
+/* No terminales con atributo*/
 non terminal Simbolo factor, expr;
 non terminal String tipo, t_componente, t_basico;
 
@@ -61,7 +69,7 @@ precedence left POR,ENTRE;
 precedence left SQRT,POW;
 precedence left UMENOS, UMAS;
 precedence left ABRE_PARENTESIS;
-precedence left ABRE_LLAVE, CIERRA_LLAVE;
+
 
 /*Gramatica*/
 
@@ -71,16 +79,18 @@ programa ::= bloque {: pila = new PilaTablasSimbolos(); :}
 bloque ::= ABRE_LLAVE 
 {: if(ts!=null){
 	pila.push(ts);}
-	ts=new TablaSimbolos(pila); :}
+	ts=new TablaSimbolos(pila);
+	System.out.println("<INICIO DE BLOQUE>"); :}
 	
-decls instrs CIERRA_LLAVE 
-{: if (pila.size()>0){
-		ts=pila.pop();}
-	 else{
-	 	ts=null;} :} 
+	decls instrs CIERRA_LLAVE 
+	{: if (pila.size()>0){
+			ts=pila.pop();}
+		 else{
+		 	ts=null;}
+	System.out.println("<FIN DE BLOQUE>"); :} 
 ;
 
-decls ::= decls decl
+decls ::= decls decl | /*EPSILON*/
 ;
 
 decl ::= tipo:t1 ID:id0 PTOYCOMA
@@ -106,9 +116,11 @@ t_componente ::= ABRE_CORCHETE INTEGER:num_int CIERRA_CORCHETE t_componente:tc
 		RESULT= ""+num_int+ "x" + tc;}
 		else{
 			RESULT = "" +num_int;}; :}
+|
+/*EPSILON*/
 ;
 
-instrs ::= instrs instr 
+instrs ::= instrs instr | /*EPSILON*/
 ;
 
 instr ::= bloque | factor:f1 ASSIGN expr:e PTOYCOMA
@@ -141,7 +153,7 @@ instr ::= bloque | factor:f1 ASSIGN expr:e PTOYCOMA
 	{: try{
 		simb=ts.get(f1.nombre);
 		if(simb!=null){
-			System.out.println("Simbolo: "+simb);
+			System.out.println(simb);
 			}
 		else{
 			System.out.println("Variable no declarada: "+f1.nombre+" [linea:" +f1left+ ", col: " +f1right+ "] \n");
@@ -159,7 +171,8 @@ factor::= ID:id1
 			System.out.println("Variable no declarada"+id1+" [linea:" +id1left+ ", col: " +id1right+ "] \n");
 			RESULT = null;
 		}
-	:} ;
+	:} 
+;
 
 expr::= INTEGER | factor:f1
 {:

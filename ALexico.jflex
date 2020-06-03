@@ -8,7 +8,6 @@ import java_cup.runtime.*;
 Identificador = [a-zA-Z_][a-zA-Z_0-9]*
 
 %%
-{Identificador} { return new Symbol(sym.ID, yyline, yycolumn,  yytext()); }
 "print" { return new Symbol(sym.PRINT); }
 "int" { return new Symbol(sym.TIPO_INT); }
 "float" { return new Symbol(sym.TIPO_FLOAT); }
@@ -26,6 +25,7 @@ Identificador = [a-zA-Z_][a-zA-Z_0-9]*
 "{" { return new Symbol(sym.ABRE_LLAVE); }
 "}" { return new Symbol(sym.CIERRA_LLAVE); }
 "=" { return new Symbol(sym.ASSIGN); }
+{Identificador} { return new Symbol(sym.ID, yyline, yycolumn, yytext()); }
 [:digit:]+ { return new Symbol(sym.INTEGER, yyline, yycolumn, new Integer(yytext())); }
 [:digit:]+([eE\.][+-]?[:digit:]*([eE][+-]?[:digit:]*)?)? { return new Symbol(sym.FLOAT, yyline, yycolumn, new Float(yytext())); }
 [ \t\r\n]+ {;}
