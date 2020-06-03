@@ -174,7 +174,9 @@ factor::= ID:id1
 	:} 
 ;
 
-expr::= INTEGER | factor:f1
+expr::= INTEGER:n2 {: RESULT = new Simbolo("", "TIPO_INT" , n2); :}
+| 
+factor:f1
 {:
 	try{
 		simb=ts.get(f1.nombre);
